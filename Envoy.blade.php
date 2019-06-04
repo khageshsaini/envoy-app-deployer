@@ -34,11 +34,13 @@
 
 {{-- Upload env for app --}}
 @task('upload_env', ['on' => 'localhost'])
+    echo "Attempting to upload env file..."
     scp {{ $env_path }} {{ "{$scp_server}:{$deploy_path}.env_new" }} > /dev/null
 @endtask
 
 {{-- Switch .envs --}}
 @task('switch_env', ['on' => 'server'])
+    echo "Attempting to switch envs..."
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
         if test -f {{ "{$deploy_path}.env_new" }}; then
@@ -52,33 +54,37 @@
 
 {{-- Pull the branch into repository task --}}
 @task('pull', ['on' => 'server'])
+    echo "Attempting to pull from git...";
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
-        if git ls-remote -h {{ $remote }} | grep  "refs/heads/{{ $branch }}" > /dev/null; then 
+        if git ls-remote -h {{ $remote }} | grep  "refs/heads/{{ $branch }}" &> /dev/null; then 
             echo "Fetching from git..."
             git fetch {{ $remote }} {{$branch}} > /dev/null
             git checkout {{ $branch }} > /dev/null
             git stash > /dev/null
             git reset --hard  {{ $remote.'/'.$branch }} > /dev/null
-            git stash pop > /dev/null
-            echo "Pulled the {{ $branch }} branch successfully via {{ $remote.' -- '.$branch }}"
+            git stash pop > /dev/null || true
+            echo "Pulled the {{ $branch }} branch successfully via {{ $remote }}"
         fi
     fi
 @endtask
 
 {{-- Updates composer, then runs a fresh installation --}}
 @task('composer', ['on' => 'server'])
+    echo "Attempting to run composer..."
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
-        echo "Running composer commands..."
+        echo "Running composer Install..."
         composer install --prefer-dist --no-interaction
+        echo "Running composer dump-autoload..."
         composer dump-autoload > /dev/null
-        echo "Composer dependencies have been installed";
+        echo "Composer dependencies have been installed"
     fi
 @endtask
 
 {{-- Set permissions for various files and directories --}}
 @task('permissions', ['on' => 'server'])
+    echo "Attempting to set permissions..."
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
         @foreach($writable as $item)
