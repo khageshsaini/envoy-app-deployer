@@ -32,10 +32,30 @@
 {{-- Server Setup --}}
 @servers($servers)
 
+
+{{-- Check Deployment Path --}}
+@task('check_path', ['on' => 'server'])
+    echo "{{ 'Target Deployement Path - '.$deploy_path  }}"
+    echo "Attempting to validate deployement path..."
+    if test -d {{ $deploy_path }}; then
+        echo "Success."
+    else
+        echo "Failed. Exiting."
+        exit 1
+    fi
+@endtask
+
 {{-- Upload env for app --}}
 @task('upload_env', ['on' => 'localhost'])
     echo "Attempting to upload env file..."
-    scp {{ $env_path }} {{ "{$scp_server}:{$deploy_path}.env_new" }} > /dev/null
+    if test -f {{ $env_path }}; then
+        echo "Initiating SCP..."
+        scp {{ $env_path }} {{ "{$scp_server}:{$deploy_path}.env_new" }} > /dev/null
+        echo "Env uploaded successfully"
+    else 
+        echo "Cannot find the env file. Please check for env file. Exiting"
+        exit 1
+    fi
 @endtask
 
 {{-- Switch .envs --}}
@@ -44,10 +64,12 @@
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
         if test -f {{ "{$deploy_path}.env_new" }}; then
-            echo "Copying .env file"
+            echo "Copying .env file..."
             cp .env .env_old
-            echo "Setting new .env file"
+            echo "Old env backed up successfully by .env_old"
+            echo "Setting new .env file..."
             mv .env_new .env
+            echo "New env file in effect"
         fi  
     fi
 @endtask
@@ -65,7 +87,12 @@
             git reset --hard  {{ $remote.'/'.$branch }} > /dev/null
             git stash pop > /dev/null || true
             echo "Pulled the {{ $branch }} branch successfully via {{ $remote }}"
+        else 
+            echo "Possible misconfiguration in remote and branch input. Please check your input."
+            echo "Git pull failed"
         fi
+    else
+        echo "Cannot change current directory to deploy path"
     fi
 @endtask
 
@@ -79,6 +106,8 @@
         echo "Running composer dump-autoload..."
         composer dump-autoload > /dev/null
         echo "Composer dependencies have been installed"
+    else
+        echo "Cannot change current directory to deploy path"
     fi
 @endtask
 
@@ -88,20 +117,23 @@
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
         @foreach($writable as $item)
-            chmod -R 755 {{ $item }}
-            chmod -R g+s {{ $item }}
-            chgrp -R www-data {{ $item }}
+            chmod -R 755 {{ $item }} || true
+            chmod -R g+s {{ $item }} || true
+            chgrp -R www-data {{ $item }} || true
             echo "Permissions have been set for {{ $item }} folder"
 
             @if($item === 'storage')
                 touch "storage/logs/lumen.log"
             @endif
         @endforeach
+    else
+        echo "Cannot change current directory to deploy path"
     fi
 @endtask
 
 {{-- Deployment Story, use to deploy a new version of a existent project --}}
 @story('deploy')
+        check_path
 		upload_env
 		switch_env
         pull
