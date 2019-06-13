@@ -1,5 +1,6 @@
 {
     "require": {
-        "vlucas/phpdotenv": "^2.0"
+        "vlucas/phpdotenv": "^2.0",
+        "laravel/envoy": "^1.5"
     }
 }
