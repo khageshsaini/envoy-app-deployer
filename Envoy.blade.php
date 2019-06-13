@@ -117,7 +117,7 @@
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
         @foreach($writable as $item)
-            chmod -R 755 {{ $item }} || true
+            chmod -R 775 {{ $item }} || true
             chmod -R g+s {{ $item }} || true
             chgrp -R www-data {{ $item }} || true
             echo "Permissions have been set for {{ $item }} folder"
