@@ -131,6 +131,19 @@
     fi
 @endtask
 
+{{-- Set custom tasks --}}
+@task('custom_tasks', ['on' => 'server'])
+    echo "Attempting to invoke custom tasks..."
+    if test -d {{ $deploy_path }}; then
+        cd {{ $deploy_path }}
+        #Write commands here...
+
+        echo "Custom tasks compeleted."
+    else
+        echo "Cannot change current directory to deploy path"
+    fi
+@endtask
+
 {{-- Deployment Story, use to deploy a new version of a existent project --}}
 @story('deploy')
         check_path
@@ -139,4 +152,5 @@
         pull
         composer
         permissions
+        custom_tasks
 @endstory
