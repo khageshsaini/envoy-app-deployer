@@ -102,7 +102,7 @@
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
         echo "Running composer Install..."
-        composer install --prefer-dist --no-interaction
+        composer install --prefer-dist --no-interaction --no-dev --ansi
         echo "Running composer dump-autoload..."
         composer dump-autoload > /dev/null
         echo "Composer dependencies have been installed"
