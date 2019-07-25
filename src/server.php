@@ -4,7 +4,16 @@
 require_once 'host.php';
 require_once 'user.php';
 
-$scp_server = "{$user}@{$host}";
-$server = "-A {$scp_server}";
-$localhost = "127.0.0.1";
-$servers = compact('server', 'localhost');
+$hosts = array_map('trim', explode(',', $host));
+$remotes = [];
+foreach ($hosts as $key => $host) {
+    $remotes['remote_'.$key] = "{$user}@{$host}";
+}
+
+$localhost = '127.0.0.1';
+
+//Configure servers array
+$servers = array_merge($remotes, compact('localhost'));
+
+//Remote Servers Identifiers
+$remote_keys = array_keys($remotes);

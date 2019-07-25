@@ -16,9 +16,6 @@ if (isset($on)) {
         die;
     }
 } else {
-    //If on variable is not set, then we must get the host from the user itself
-    if (!isset($host) || empty($host)) {
-        throw new \Exception('The --host option is required if --on option is not set.');
-        die;
-    }
+    throw new \Exception('The --on option is not set.');
+    die;
 }

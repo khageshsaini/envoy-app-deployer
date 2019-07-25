@@ -11,7 +11,7 @@ if (isset($on) && in_array($on, ['test', 'stable', 'staging', 'live'])) {
         }
 
         if (!isset($branch)) {
-            $branch = $on;
+            $branch = 'master';
         }
     }
 } else {

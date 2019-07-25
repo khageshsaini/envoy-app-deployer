@@ -27,6 +27,7 @@
     */
    	$env_file = isset($on) ? ".env_{$on}" : ".env";
    	$env_path = __DIR__."/../{$env_file}";
+    $new_env_file_name = ".env_new";
 @endsetup
 
 {{-- Server Setup --}}
@@ -34,7 +35,7 @@
 
 
 {{-- Check Deployment Path --}}
-@task('check_path', ['on' => 'server'])
+@task('check_path', ['on' => $remote_keys])
     echo "{{ 'Target Deployement Path - '.$deploy_path  }}"
     echo "Attempting to validate deployement path..."
     if test -d {{ $deploy_path }}; then
@@ -47,23 +48,34 @@
 
 {{-- Upload env for app --}}
 @task('upload_env', ['on' => 'localhost'])
-    echo "Attempting to upload env file..."
-    if test -f {{ $env_path }}; then
-        echo "Initiating SCP..."
-        scp {{ $env_path }} {{ "{$scp_server}:{$deploy_path}.env_new" }} > /dev/null
-        echo "Env uploaded successfully"
-    else 
-        echo "Cannot find the env file. Please check for env file. Exiting"
-        exit 1
-    fi
+    
+    function upload() {
+        local_path="${1}"
+        server="${2}"
+        remote_path="${3}"
+        echo "Attempting to upload env file on ${server}..."
+        if test -f "${local_path}"; then
+            echo "Initiating SCP on ${server}..."
+            scp  "${local_path}" "${server}:${remote_path}" > /dev/null
+            echo "Env uploaded successfully on ${server}"
+        else 
+            echo "Cannot find the env file. Please check for env file. Exiting"
+            exit 1
+        fi
+    }
+
+    servers=({{ implode(' ', array_values($remotes)) }})
+    for server in "${!servers[@]}"; do
+        upload "{{ $env_path }}" "${servers[server]}" "{{ "{$deploy_path}{$new_env_file_name}" }}"
+    done
 @endtask
 
 {{-- Switch .envs --}}
-@task('switch_env', ['on' => 'server'])
+@task('switch_env', ['on' => $remote_keys])
     echo "Attempting to switch envs..."
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
-        if test -f {{ "{$deploy_path}.env_new" }}; then
+        if test -f {{ "{$deploy_path}{$new_env_file_name}" }}; then
             echo "Copying .env file..."
             cp .env .env_old
             echo "Old env backed up successfully by .env_old"
@@ -75,7 +87,7 @@
 @endtask
 
 {{-- Pull the branch into repository task --}}
-@task('pull', ['on' => 'server'])
+@task('pull', ['on' => $remote_keys])
     echo "Attempting to pull from git...";
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
@@ -97,7 +109,7 @@
 @endtask
 
 {{-- Updates composer, then runs a fresh installation --}}
-@task('composer', ['on' => 'server'])
+@task('composer', ['on' => $remote_keys])
     echo "Attempting to run composer..."
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
@@ -112,7 +124,7 @@
 @endtask
 
 {{-- Set permissions for various files and directories --}}
-@task('permissions', ['on' => 'server'])
+@task('permissions', ['on' => $remote_keys])
     echo "Attempting to set permissions..."
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
@@ -132,7 +144,7 @@
 @endtask
 
 {{-- Set custom tasks --}}
-@task('custom_tasks', ['on' => 'server'])
+@task('custom_tasks', ['on' => end($remote_keys)])
     echo "Attempting to invoke custom tasks..."
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
