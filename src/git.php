@@ -1,7 +1,7 @@
 <?php
 
 //Git Config Configuration
-if (isset($on) && in_array($on, ['test', 'stable', 'staging', 'live'])) {
+if (isset($on) && in_array($on, ['test', 'stable', 'staging', 'live', 'audit'])) {
     if ('live' === $on) {
         $remote = 'upstream';
         $branch = 'master';

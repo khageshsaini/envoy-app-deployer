@@ -2,7 +2,7 @@
 
 //Host Configuration
 if (isset($on)) {
-    if (in_array($on, ['test', 'stable', 'staging', 'live'])) {
+    if (in_array($on, ['test', 'stable', 'staging', 'live', 'audit'])) {
         $host_var = strtoupper($on).'_HOST';
 
         if (!getenv($host_var) || empty(getenv($host_var))) {
