@@ -48,7 +48,7 @@
 
 {{-- Upload env for app --}}
 @task('upload_env', ['on' => 'localhost'])
-    
+
     function upload() {
         local_path="${1}"
         server="${2}"
@@ -58,7 +58,7 @@
             echo "Initiating SCP on ${server}..."
             scp  "${local_path}" "${server}:${remote_path}" > /dev/null
             echo "Env uploaded successfully on ${server}"
-        else 
+        else
             echo "Cannot find the env file. Please check for env file. Exiting"
             exit 1
         fi
@@ -82,7 +82,7 @@
             echo "Setting new .env file..."
             mv .env_new .env
             echo "New env file in effect"
-        fi  
+        fi
     fi
 @endtask
 
@@ -91,7 +91,7 @@
     echo "Attempting to pull from git...";
     if test -d {{ $deploy_path }}; then
         cd {{ $deploy_path }}
-        if git ls-remote -h {{ $remote }} | grep  "refs/heads/{{ $branch }}" &> /dev/null; then 
+        if git ls-remote -h {{ $remote }} | grep  "refs/heads/{{ $branch }}" &> /dev/null; then
             echo "Fetching from git..."
             git fetch {{ $remote }} {{$branch}} > /dev/null
             git stash > /dev/null
@@ -99,7 +99,7 @@
             git reset --hard  {{ $remote.'/'.$branch }} > /dev/null
             git stash pop > /dev/null || true
             echo "Pulled the {{ $branch }} branch successfully via {{ $remote }}"
-        else 
+        else
             echo "Possible misconfiguration in remote and branch input. Please check your input."
             echo "Git pull failed"
         fi
