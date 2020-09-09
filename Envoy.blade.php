@@ -94,8 +94,8 @@
         if git ls-remote -h {{ $remote }} | grep  "refs/heads/{{ $branch }}" &> /dev/null; then 
             echo "Fetching from git..."
             git fetch {{ $remote }} {{$branch}} > /dev/null
-            git checkout {{ $branch }} > /dev/null
             git stash > /dev/null
+            git checkout {{ $branch }} > /dev/null
             git reset --hard  {{ $remote.'/'.$branch }} > /dev/null
             git stash pop > /dev/null || true
             echo "Pulled the {{ $branch }} branch successfully via {{ $remote }}"
