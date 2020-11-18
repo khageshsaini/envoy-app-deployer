@@ -2,7 +2,7 @@
 
 //Server Path Configuration--}}
 if (isset($on)) {
-    if (in_array($on, ['test', 'stable', 'staging', 'live', 'audit'])) {
+    if (in_array($on, ['test', 'stable', 'staging', 'live', 'audit', 'beta'])) {
         $path_var = 'APP_'.strtoupper($on).'_PATH';
 
         if (!getenv($path_var) || empty(getenv($path_var))) {
