@@ -70,6 +70,23 @@
     done
 @endtask
 
+{{-- Download env for app --}}
+@task('download_env', ['on' => 'localhost'])
+
+    function download() {
+        server="${1}"
+        remote_path="${2}"
+        local_path="${3}"
+        echo "Attempting to download env file from ${server}..."
+        echo "Initiating SCP from ${server}..."
+        scp  "${server}:${remote_path}" "${local_path}"  > /dev/null
+        echo "Env downloaded successfully from ${server}"
+    }
+
+    server="{{ reset($remotes) }}"
+    download "{{ reset($remotes) }}" "{{ "{$deploy_path}.env" }}" "{{ $env_path }}"
+@endtask
+
 {{-- Switch .envs --}}
 @task('switch_env', ['on' => $remote_keys])
     echo "Attempting to switch envs..."
