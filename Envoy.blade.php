@@ -19,6 +19,16 @@
 
     /*
     |--------------------------------------------------------------------------
+    | SLACK WORKFLOW
+    |--------------------------------------------------------------------------
+    |
+    | Slack workflow webhook setup.
+    |
+    */
+    $slackUrl = getenv("SLACK_WORKFLOW_WEBHOOK_URL");
+
+    /*
+    |--------------------------------------------------------------------------
     | APP ENV PATH
     |--------------------------------------------------------------------------
     |
@@ -150,7 +160,7 @@
         cd {{ $deploy_path }}
         #Write commands here...
 
-        echo "Custom tasks compeleted."
+        echo "Custom tasks completed."
     else
         echo "Cannot change current directory to deploy path"
     fi
@@ -166,3 +176,35 @@
         permissions
         custom_tasks
 @endstory
+
+
+@finished
+
+    if(isset($slackUrl)) {
+        echo "Attempting to send slack notification...".PHP_EOL;
+        $app = basename(exec('cd .. && pwd'));
+        $response = file_get_contents($slackUrl, false,
+            stream_context_create(array(
+                'http' => array(
+                    'header'  => "Content-type: application/json\r\n",
+                    'method'  => 'POST',
+                    'content' => json_encode([
+                        'app' => $app,
+                        'env' => ucwords($on),
+                        'remote' => $remote,
+                        'branch' => $branch,
+                        'github_url' => "https://github.com/vmockinc/{$app}/tree/{$branch}",
+                        'user'=> exec('git config user.name'),
+                        'hosts' => implode(' | ', $hosts)
+                    ])
+                )
+            ))
+        );
+        if ($response === false) {
+            echo "Failed to send slack notification.".PHP_EOL;
+        } else {
+            echo "Slack notification sent successfully.".PHP_EOL;
+        }
+    }
+
+@endfinished
