@@ -4,6 +4,7 @@
 	require_once 'src/server.php';
 	require_once 'src/git.php';
 	require_once 'src/deploy_path.php';
+    require_once 'src/slack.php';
 
 	/*
     |--------------------------------------------------------------------------
@@ -16,16 +17,6 @@
     $writable = [
         'storage'
     ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | SLACK WORKFLOW
-    |--------------------------------------------------------------------------
-    |
-    | Slack workflow webhook setup.
-    |
-    */
-    $slackUrl = getenv("SLACK_WORKFLOW_WEBHOOK_URL");
 
     /*
     |--------------------------------------------------------------------------
@@ -166,6 +157,41 @@
     fi
 @endtask
 
+{{-- Send Slack Notification --}}
+@task('notify', ['on' => end($remote_keys)])
+    if test -d {{ $deploy_path }}; then
+        if [[ -n {{ $slackUrl }} ]];then
+            # slack webhook integration
+            echo "Attempting to send slack notification..."
+
+            cd {{ $deploy_path }}
+            url=$(git config --get remote.{{$remote}}.url)
+            re="^(https|git)(:\/\/|@)([^\/:]+)[\/:]([^\/:]+)\/(.+).git$"
+
+            if [[ $url =~ $re ]]; then
+                #protocol=${BASH_REMATCH[1]}
+                #separator=${BASH_REMATCH[2]}
+                #hostname=${BASH_REMATCH[3]}
+                user=${BASH_REMATCH[4]}
+                repo=${BASH_REMATCH[5]}
+            fi
+
+            githubUrl="https://github.com/$user/$repo/tree/{{$branch}}"
+            # add github_url to slack params
+            updatedSlackParams=$(echo '{{ $slackParams }}' | jq --arg githubUrl $githubUrl '. + {github_url: $githubUrl}')
+
+            response=$(curl -sS -X POST -H 'Content-type: application/json' -d "$updatedSlackParams" '{{ $slackUrl }}')
+            if [[ -z $response ]];then
+                echo "Slack notification sent successfully."
+            else
+                echo "Failed to send slack notification."
+            fi
+        fi
+    else
+        echo "Cannot change current directory to deploy path"
+    fi
+@endtask
+
 {{-- Deployment Story, use to deploy a new version of a existent project --}}
 @story('deploy')
         check_path
@@ -175,36 +201,6 @@
         composer
         permissions
         custom_tasks
+        notify
 @endstory
 
-
-@finished
-
-    if(isset($slackUrl)) {
-        echo "Attempting to send slack notification...".PHP_EOL;
-        $app = basename(exec('cd .. && pwd'));
-        $response = file_get_contents($slackUrl, false,
-            stream_context_create(array(
-                'http' => array(
-                    'header'  => "Content-type: application/json\r\n",
-                    'method'  => 'POST',
-                    'content' => json_encode([
-                        'app' => $app,
-                        'env' => ucwords($on),
-                        'remote' => $remote,
-                        'branch' => $branch,
-                        'github_url' => "https://github.com/vmockinc/{$app}/tree/{$branch}",
-                        'user'=> exec('git config user.name'),
-                        'hosts' => implode(' | ', $hosts)
-                    ])
-                )
-            ))
-        );
-        if ($response === false) {
-            echo "Failed to send slack notification.".PHP_EOL;
-        } else {
-            echo "Slack notification sent successfully.".PHP_EOL;
-        }
-    }
-
-@endfinished
