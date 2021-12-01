@@ -167,20 +167,18 @@
             cd {{ $deploy_path }}
             url=$(git config --get remote.{{$remote}}.url)
             re="^(https|git)(:\/\/|@)([^\/:]+)[\/:]([^\/:]+)\/(.+).git$"
-
             if [[ $url =~ $re ]]; then
-                #protocol=${BASH_REMATCH[1]}
-                #separator=${BASH_REMATCH[2]}
-                #hostname=${BASH_REMATCH[3]}
                 user=${BASH_REMATCH[4]}
                 repo=${BASH_REMATCH[5]}
             fi
 
             githubUrl="https://github.com/$user/$repo/tree/{{$branch}}"
-            # add github_url to slack params
-            updatedSlackParams=$(echo '{{ $slackParams }}' | jq --arg githubUrl $githubUrl '. + {github_url: $githubUrl}')
 
-            response=$(curl -sS -X POST -H 'Content-type: application/json' -d "$updatedSlackParams" '{{ $slackUrl }}')
+            #slack webhook params
+            slackParams='{"app":"'"$repo"'","env": "{{$on}}","github_url":"'"$githubUrl"'","remote":"{{$remote}}","branch":"{{$branch}}","hosts":"{{$hostNames}}"}'
+
+            # post request to webhook with params
+            response=$(curl -sS -X POST -H 'Content-type: application/json' -d "$slackParams" '{{ $slackUrl }}')
             if [[ -z $response ]];then
                 echo "Slack notification sent successfully."
             else
