@@ -158,7 +158,7 @@
 @endtask
 
 {{-- Send Slack Notification --}}
-@task('notify', ['on' => end($remote_keys)])
+@task('notify_on_slack', ['on' => end($remote_keys)])
     if test -d {{ $deploy_path }}; then
         if [[ -n {{ $slackUrl }} ]];then
             # slack webhook integration
@@ -199,6 +199,6 @@
         composer
         permissions
         custom_tasks
-        notify
+        notify_on_slack
 @endstory
 
